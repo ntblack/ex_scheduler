@@ -19,6 +19,8 @@ defmodule Scheduler do
     iex> Scheduler.available_matchup_sets([1, 2])
     [[{1, 2}]]
 
+    iex> Scheduler.available_matchup_sets([1, 2, 3, 4])
+    [[{1, 2}, {3, 4}], [{1, 3}, {2, 4}], [{1, 4}, {2, 3}]]
   """
 
   def available_matchup_sets(rosters) do
@@ -37,9 +39,12 @@ defmodule Scheduler do
   def _available_matchup_sets(rosters) do
     matchups = pairs(rosters)
 
-    [first | rest] = matchups
+    matchups |> Enum.flat_map(fn {a, b} ->
+      remaining_rosters = rosters |> Enum.reject(fn num ->  num == a || num == b end)
+      subsets = _available_matchup_sets(remaining_rosters)
+      subsets |> Enum.map(fn item -> [{a, b} | item] end)
+    end)
 
-    []
   end
 
   @doc """
@@ -56,10 +61,10 @@ defmodule Scheduler do
     [{1, 2}]
 
     iex> Scheduler.pairs([1, 2, 3])
-    [{1, 2}, {1, 3}, {2, 3}]
+    [{1, 2}, {1, 3}]
 
     iex> Scheduler.pairs(["bye", 1, 2, 3])
-    [{"bye", 1}, {"bye", 2}, {"bye", 3}, {1, 2}, {1, 3}, {2, 3}]
+    [{"bye", 1}, {"bye", 2}, {"bye", 3}]
 
   """
   def pairs([]) do
@@ -71,6 +76,6 @@ defmodule Scheduler do
   end
 
   def pairs([head | tail]) do
-    tail |> Enum.map(fn el -> {head, el} end) |> Enum.concat(pairs(tail))
+    tail |> Enum.map(fn el -> {head, el} end)
   end
 end
