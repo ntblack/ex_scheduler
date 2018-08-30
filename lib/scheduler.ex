@@ -38,12 +38,19 @@ defmodule Scheduler do
     iex> Scheduler.schedule_for_divisions([[1, 2], [3, 4], [5, 6]], 17) |> Enum.at(5)
     [{1, 2}, {3, 4}, {5, 6}]
 
+
+    # test smooshing byes
+    iex> Scheduler.schedule_for_divisions([[1, 2, 3], [4, 5, 6]]) |> Enum.at(0) |> MapSet.new
+    [{1, 4}, {2, 3}, {5, 6}] |> MapSet.new
+
+
   """
   def schedule_for_divisions(divisions, num_weeks \\ nil) do
     division_schedule = divisions |> Enum.map(&valid_schedules/1)
                                   |> Enum.zip
                                   |> Enum.map(&Tuple.to_list/1)
                                   |> Enum.map(&Enum.concat/1)
+                                  |> Enum.map(&smoosh_byes/1)
 
     division_matchups_to_exclude = Enum.concat(division_schedule)
                                    |> MapSet.new
@@ -57,6 +64,19 @@ defmodule Scheduler do
       nil -> all_weeks
       _ -> all_weeks |> Stream.cycle |> Enum.take(num_weeks)
     end
+  end
+
+  defp smoosh_byes(weekly_matchups) do
+    weekly_matchups |> Enum.reduce([], fn matchup, acc ->
+      case acc do
+        [{"bye", a} | tail] -> case matchup do
+                    {"bye", b} -> [{a, b} | tail] # smoosh!
+                    _ -> [{"bye", a} | [matchup | tail]] # waiting to smoosh
+                 end
+       _ -> [matchup | acc]
+      end
+    end)
+    |> Enum.reverse
   end
 
   @moduledoc """
