@@ -34,8 +34,12 @@ defmodule Scheduler do
       [{1, 8}, {2, 7}, {3, 6}, {4, 5}]
     ]
 
+    # test cycling the weeks
+    iex> Scheduler.schedule_for_divisions([[1, 2], [3, 4], [5, 6]], 17) |> Enum.at(5)
+    [{1, 2}, {3, 4}, {5, 6}]
+
   """
-  def schedule_for_divisions(divisions) do
+  def schedule_for_divisions(divisions, num_weeks \\ nil) do
     division_schedule = divisions |> Enum.map(&valid_schedules/1)
                                   |> Enum.zip
                                   |> Enum.map(&Tuple.to_list/1)
@@ -44,11 +48,15 @@ defmodule Scheduler do
     division_matchups_to_exclude = Enum.concat(division_schedule)
                                    |> MapSet.new
 
+    # for inter-division play, exclude division matchups by putting them in the matchups_used filter
     interdivision_schedule = valid_schedules(Enum.concat(divisions), division_matchups_to_exclude)
 
-    Enum.concat(division_schedule, interdivision_schedule)
+    all_weeks = Enum.concat(division_schedule, interdivision_schedule)
 
-    # for inter-division play, exclude division matchups by putting them in the matchups_used filter
+    case num_weeks do
+      nil -> all_weeks
+      _ -> all_weeks |> Stream.cycle |> Enum.take(num_weeks)
+    end
   end
 
   @moduledoc """
